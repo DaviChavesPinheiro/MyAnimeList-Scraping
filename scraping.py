@@ -15,7 +15,13 @@ try:
     html = html.decode('utf-8') # Decode Bytes to String in utf-8 encoding
     html = process_html(html)
     soup = BeautifulSoup(html, "html.parser")
-    print(soup.select_one('h2').text)
+    print(soup.html.head.title) #Browse through tags
+    print(soup.html.head.title.getText())#Get text from tag
+    print(soup.img.attrs)#Get attributes of the first image found
+    print(soup.img.attrs.keys())
+    print(soup.img.attrs.values())
+    print(soup.img['src'])
+    print(soup.img.get('src'))
 except HTTPError as e:
     print(e.status, e.reason)
 except URLError as e:
