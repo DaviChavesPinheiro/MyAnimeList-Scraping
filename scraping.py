@@ -28,8 +28,9 @@ try:
             soup2 = BeautifulSoup(html2, "html.parser")
 
             column = soup2.select_one('td div')
-        
-            img = soup2.select("img")[2].get('data-src')
+
+            img = soup2.find("img", {"itemprop": "image"}).get('data-src') or soup2.find("img", {"itemprop": "image"}).get('src')
+            # img = soup2.select("img[]")[2].get('data-src') or soup2.select("img")[2].get('src')
             # print(soup2.select("img")[2])
             information = column.getText()
             information = re.split(
@@ -40,7 +41,38 @@ try:
                 genres[index] = genre[:int(len(genre) / 2)]
             genres = ", ".join(genres)
             
-            mangas.append({'title': title.strip(), "image": img, "volumes": information[1].strip(), "chapters": information[2].strip(), "status": information[3].strip(), "published": information[4].strip(),
+            #Google search by Union Mangas $title
+            description = "Descrição"
+            chapters = []
+            req3 = Request("https://www.google.com/search?q=union+mangas+" + str(title).lower().replace(" ", "+"), headers=headers)
+            response3 = urlopen(req3)
+            html3 = response3.read()
+            soup3 = BeautifulSoup(html3, "html.parser")
+            results = soup3.select_one("#search")
+            for result in results:
+                # print(result)
+                if ("unionmangas.top/perfil-manga/" in str(result.select_one("a").get("href"))):
+                    unionMangasPage = result.select_one("a").get("href")
+                    req4 = Request(unionMangasPage, headers=headers)
+                    response4 = urlopen(req4)
+                    html4 = response4.read()
+                    soup4 = BeautifulSoup(html4, "html.parser")
+                    description = soup4.select_one(".panel-body").getText().strip()
+                    for release in soup4.select(".row.lancamento-linha"):
+                        pages = []
+                        # Get All Pages Links
+                        req5 = Request(release.a.get('href'), headers=headers)
+                        response5 = urlopen(req5)
+                        html5 = response5.read()
+                        soup5 = BeautifulSoup(html5, "html.parser")
+                        for page in soup5.select("img"):
+                            pages.append(page.get('src'))
+                        print("Chapter" + release.a.getText().strip() + "Getted")
+                        chapters.append({'title': release.a.getText().strip(), 'pages': pages})
+                    chapters.reverse()
+                    break
+            
+            mangas.append({'title': title.strip(), "thumbnail": img, "description": description, "chapters": chapters, "volumes": information[1].strip(), "chaptersAmount": information[2].strip(), "status": information[3].strip(), "published": information[4].strip(),
                         "genres": genres, "authors": information[6].strip(), "score": information[8].replace("(", "").strip(), "members": information[10].strip()})
             print(mangas[len(mangas) - 1])
     print(mangas)
